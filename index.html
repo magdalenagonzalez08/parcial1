@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistemas Embebidos — Parcial 1</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
+
+:root{
+  --bg:#ffffff;
+  --bg-dot:#e7effc;
+  --ink:#1b2646;
+  --ink-dim:#66718c;
+  --blue:#2f8fff;
+  --blue-deep:#1c5fd6;
+  --orange:#ff7a3d;
+  --green:#12c48b;
+  --yellow:#ffc73c;
+  --purple:#9b5cff;
+  --pink:#ff5d8f;
+  --card:#ffffff;
+  --card-border:#eaeef6;
+  --shadow: 0 10px 26px rgba(27,38,70,0.08), 0 2px 6px rgba(27,38,70,0.05);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;height:100%;}
+body{
+  font-family:'Space Grotesk', sans-serif;
+  background: var(--bg);
+  color:var(--ink);
+  overflow:hidden;
+}
+
+.pcb-grid{
+  position:fixed; inset:0; z-index:0;
+  background-image: radial-gradient(var(--bg-dot) 1.6px, transparent 1.6px);
+  background-size: 30px 30px;
+}
+.pcb-glow{
+  position:fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(circle at 10% 8%, rgba(47,143,255,0.10), transparent 38%),
+    radial-gradient(circle at 92% 90%, rgba(255,122,61,0.10), transparent 40%),
+    radial-gradient(circle at 85% 12%, rgba(155,92,255,0.08), transparent 36%);
+}
+
+.deck{ position:relative; z-index:1; height:100vh; width:100vw; }
+
+.slide{
+  position:absolute; inset:0;
+  display:none;
+  padding: 4.4vh 5.5vw 7.5vh 5.5vw;
+  overflow-y:auto;
+  --accent: var(--blue);
+  --accent-deep: var(--blue-deep);
+}
+.slide.active{ display:flex; flex-direction:column; }
+
+.blob{ position:absolute; border-radius:30%; pointer-events:none; opacity:0.55; z-index:0; }
+.blob.b1{ width:90px; height:90px; top:8%; right:7%; background:var(--accent); opacity:0.12; border-radius:26px; transform:rotate(18deg);}
+.blob.b2{ width:60px; height:60px; bottom:10%; left:4%; background:var(--accent); opacity:0.10; border-radius:50%;}
+
+.eyebrow{
+  font-family:'JetBrains Mono', monospace;
+  font-size:0.78rem;
+  letter-spacing:0.02em;
+  color:var(--accent-deep);
+  display:flex; align-items:center; gap:10px;
+  margin-bottom: 0.55rem;
+  font-weight:700;
+  position:relative; z-index:1;
+}
+.eyebrow .chip{
+  width:11px; height:11px; border-radius:4px; background:var(--accent);
+  box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+h1.title{
+  font-size:2.15rem; font-weight:800; margin:0 0 0.5rem 0; line-height:1.15;
+  color:var(--ink); position:relative; z-index:1;
+}
+h1.title .accent{ color:var(--accent-deep); }
+
+.subtitle{ color:var(--ink-dim); font-size:1.05rem; max-width:700px; margin:0 0 1rem 0; position:relative; z-index:1; line-height:1.5;}
+
+.content{ flex:1; display:flex; gap:1.5rem; min-height:0; position:relative; z-index:1;}
+.col{ flex:1; min-width:0; display:flex; flex-direction:column; gap:0.9rem; justify-content:center;}
+
+.card{
+  background: var(--card);
+  border:1px solid var(--card-border);
+  border-left:5px solid var(--accent);
+  border-radius:18px;
+  padding:1.2rem 1.4rem;
+  box-shadow: var(--shadow);
+}
+.card h3{
+  margin:0 0 0.6rem 0; font-size:1.05rem; color:var(--accent-deep);
+  font-family:'Space Grotesk', sans-serif; font-weight:700;
+}
+.card p, .card li{ color:var(--ink); font-size:1.02rem; line-height:1.6; margin:0;}
+.card ul{ margin:0.3rem 0 0 0; padding-left:1.2rem; }
+.card li{ margin-bottom:0.5rem; }
+.card li b, .card p b{ color:var(--ink); }
+.card p.lede{ font-size:1.08rem; }
+
+.note{
+  display:inline-flex; align-items:center; gap:0.5rem;
+  font-family:'JetBrains Mono', monospace; font-size:0.78rem; font-weight:700;
+  color:#a17a00; background:#fff8e6; border:1.5px solid #ffe4a3;
+  padding:0.4rem 0.75rem; border-radius:10px; margin-top:0.7rem;
+}
+
+.pill-row{ display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem;}
+.pill{
+  font-family:'JetBrains Mono', monospace; font-size:0.75rem; font-weight:600;
+  padding:0.32rem 0.7rem; border-radius:999px;
+  border:1.5px solid var(--accent);
+  color:var(--accent-deep);
+  background: color-mix(in srgb, var(--accent) 10%, white);
+}
+
+img.evidence{
+  width:100%; border-radius:18px; border:4px solid #ffffff;
+  box-shadow: var(--shadow);
+  object-fit:cover; display:block;
+  max-height:46vh;
+  cursor: zoom-in;
+  transition: transform .12s ease;
+}
+img.evidence:hover{ transform: scale(1.015); }
+
+.img-modal{
+  position:fixed; inset:0; z-index:100; display:none;
+  align-items:center; justify-content:center;
+  background:rgba(10,14,30,0.92);
+  padding:4vh 4vw; cursor:zoom-out;
+}
+.img-modal.active{ display:flex; }
+.img-modal img{
+  max-width:92vw; max-height:92vh; border-radius:16px;
+  box-shadow:0 25px 70px rgba(0,0,0,0.55);
+  border:4px solid #ffffff;
+}
+.img-modal .modal-hint{
+  position:fixed; top:3vh; left:0; right:0; text-align:center;
+  font-family:'JetBrains Mono', monospace; font-size:0.78rem; color:#ffffffcc;
+  letter-spacing:0.03em;
+}
+.figcap{ font-family:'JetBrains Mono', monospace; font-size:0.72rem; color:var(--ink-dim); margin-top:0.5rem; text-align:center;}
+
+.code{
+  background:#16213a;
+  border-radius:16px;
+  padding:1.1rem 1.25rem;
+  font-family:'JetBrains Mono', monospace;
+  font-size:0.85rem;
+  line-height:1.65;
+  color:#d6e6ff;
+  overflow:auto;
+  white-space:pre;
+  box-shadow: var(--shadow);
+  border-top:5px solid var(--accent);
+}
+.code .kw{color:#67b7ff;}
+.code .fn{color:#ffc060;}
+.code .cm{color:#7d94c4; font-style:italic;}
+
+table.truth{
+  width:100%; border-collapse:separate; border-spacing:0; font-size:0.95rem;
+  font-family:'Space Grotesk', sans-serif; border-radius:12px; overflow:hidden;
+  border:1px solid var(--card-border);
+}
+table.truth th, table.truth td{
+  padding:0.55rem 0.7rem; text-align:center; border-bottom:1px solid var(--card-border);
+}
+table.truth th{ background: color-mix(in srgb, var(--accent) 14%, white); color:var(--accent-deep); font-weight:700; font-family:'JetBrains Mono', monospace; font-size:0.78rem;}
+table.truth td{ color:var(--ink);}
+table.truth tr:last-child td{ border-bottom:none; }
+
+.led-strip{ display:flex; gap:0.9rem; align-items:flex-end; margin:0.9rem 0 0.2rem 0; }
+.led{
+  width:38px; height:38px; border-radius:50%;
+  border:3px solid #ffffff;
+  display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono', monospace; font-size:0.65rem; color:#ffffff; font-weight:800;
+  box-shadow: var(--shadow);
+}
+.led.on1{ background:var(--green);}
+.led.on2{ background:var(--yellow); color:#5c4300;}
+.led.on3{ background:var(--orange);}
+.led.on4{ background:var(--pink);}
+
+.timeline{ display:flex; flex-direction:column; gap:0.7rem; }
+.tl-item{ display:flex; gap:0.8rem; align-items:flex-start;}
+.tl-dot{ min-width:12px; height:12px; border-radius:4px; background:var(--accent); margin-top:0.32rem;}
+.tl-item p{ margin:0; color:var(--ink); font-size:1rem; line-height:1.5;}
+.tl-item .wk{ color:var(--accent-deep); font-family:'JetBrains Mono', monospace; font-size:0.78rem; margin-right:0.4rem; font-weight:700;}
+
+.hud{
+  position:fixed; bottom:0; left:0; right:0; z-index:5;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:1rem 2.2rem; background:linear-gradient(0deg, rgba(255,255,255,0.96), rgba(255,255,255,0));
+}
+.dots{ display:flex; gap:6px; }
+.dot{ width:8px; height:8px; border-radius:50%; background:#dbe3f2; transition:all .2s;}
+.dot.active{ background:var(--blue); width:22px; border-radius:5px;}
+.navbtn{
+  font-family:'JetBrains Mono', monospace; font-size:0.8rem; font-weight:700;
+  background:#ffffff; border:2px solid var(--blue); color:var(--blue-deep);
+  padding:0.55rem 1.05rem; border-radius:12px; cursor:pointer;
+  box-shadow: 0 3px 0 var(--blue);
+  transition: transform .08s;
+}
+.navbtn:hover{ background: color-mix(in srgb, var(--blue) 10%, white);}
+.navbtn:active{ transform: translateY(2px); box-shadow:0 1px 0 var(--blue);}
+.counter{ font-family:'JetBrains Mono', monospace; font-size:0.8rem; color:var(--ink-dim); font-weight:600;}
+
+.title-slide{ align-items:center; justify-content:center; text-align:center; }
+.title-slide h1{ font-size:2.6rem; }
+.uni{
+  font-family:'JetBrains Mono', monospace; font-weight:700; font-size:0.95rem;
+  color:var(--ink); letter-spacing:0.01em; position:relative; z-index:1;
+}
+.uni-sub{ color:var(--ink-dim); font-size:0.85rem; margin-top:0.15rem; position:relative; z-index:1;}
+.parcial-badge{
+  font-family:'JetBrains Mono', monospace; font-weight:800; font-size:0.85rem;
+  color:#ffffff; background:var(--blue-deep); padding:0.4rem 1.1rem; border-radius:999px;
+  margin:1.2rem 0 0.4rem 0; position:relative; z-index:1; letter-spacing:0.03em;
+}
+.badge-row{ display:flex; gap:0.6rem; flex-wrap:wrap; justify-content:center; margin-top:1.4rem; position:relative; z-index:1;}
+.member{
+  font-family:'JetBrains Mono', monospace; font-size:0.82rem; font-weight:600; color:var(--ink);
+  border:2px solid var(--card-border); padding:0.5rem 1.05rem; border-radius:999px;
+  background:#ffffff; box-shadow: var(--shadow);
+}
+.prof-line{ font-size:0.92rem; color:var(--ink-dim); margin-top:0.9rem; position:relative; z-index:1;}
+.ic-row{ display:flex; gap:1.3rem; margin-top:1.6rem; justify-content:center; position:relative; z-index:1;}
+.ic{ width:52px;height:52px;border-radius:14px; display:flex;align-items:center;justify-content:center; font-size:1.4rem; box-shadow: var(--shadow); background:#ffffff;}
+.ic.i1{ border-bottom:4px solid var(--blue); }
+.ic.i2{ border-bottom:4px solid var(--orange); }
+.ic.i3{ border-bottom:4px solid var(--green); }
+.ic.i4{ border-bottom:4px solid var(--purple); }
+
+.grid4{ display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:1rem; flex:1;}
+
+@media (max-width: 900px){
+  .content{ flex-direction:column; }
+  h1.title{ font-size:1.6rem; }
+}
+</style>
+</head>
+</head>
+<body>
+
+<div class="pcb-grid"></div>
+<div class="pcb-glow"></div>
+
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: Título -->
+  <section class="slide active title-slide" style="--accent:#2f8fff; --accent-deep:#1c5fd6;">
+    <div class="blob b1"></div><div class="blob b2"></div>
+    <img src="assets/utp_logo.png" alt="Logo UTP" style="width:92px; height:92px; object-fit:contain; margin-bottom:0.5rem; position:relative; z-index:1;">
+    <div class="uni">UNIVERSIDAD TECNOLÓGICA DE PANAMÁ</div>
+    <div class="uni-sub">Facultad de Ingeniería de Sistemas Computacionales · Licenciatura en Ciberseguridad</div>
+    <div class="parcial-badge">PARCIAL 1</div>
+    <h1 class="title" style="margin-top:0.3rem;">Sistemas Embebidos</h1>
+    <p class="subtitle" style="margin:0 auto; text-align:center;">Avance del proyecto: cuatro semanas de investigación y práctica.</p>
+    <div class="prof-line">Profesor: Eloy · Semestre: II Semestre 2026</div>
+    <div class="badge-row">
+      <span class="member">Magdalena González · 4-819-1590</span>
+      <span class="member">Jair Jiménez · 4-835-1794</span>
+      <span class="member">Pedro Valdés · 4-839-1747</span>
+      <span class="member">Zaid Morales · 4-827-2397</span>
+    </div>
+    <div class="ic-row">
+      <div class="ic i1">🔍</div><div class="ic i2">🔌</div><div class="ic i3">⚙️</div><div class="ic i4">🚗</div>
+    </div>
+  </section>
+
+  <!-- SLIDE 2: Agenda -->
+  <section class="slide" style="--accent:#2f8fff; --accent-deep:#1c5fd6;">
+    <div class="eyebrow"><span class="chip"></span> DE QUÉ VAMOS A HABLAR</div>
+    <h1 class="title">Lo que llevamos en estas cuatro semanas</h1>
+    <p class="subtitle">Esto es investigación y práctica en construcción, no un proyecto terminado.</p>
+    <div class="grid4">
+      <div class="card" style="border-left-color:var(--blue); justify-content:center;"><h3 style="color:var(--blue-deep)">Semana 1 — Elegimos proyecto</h3><p>El profesor nos pidió buscar un proyecto e investigar cómo se diseña una placa en EasyEDA. Todavía no la fabricamos.</p></div>
+      <div class="card" style="border-left-color:var(--orange); justify-content:center;"><h3 style="color:#c65a1f">Semana 2 — Arduino e investigación</h3><p>Nuestro primer contacto real con la tarjeta Arduino y su IDE, y el profesor nos asignó investigar dispositivos comerciales (Informe 2).</p></div>
+      <div class="card" style="border-left-color:var(--green); justify-content:center;"><h3 style="color:#0a9c6f">Semana 3 — Motor y puente H</h3><p>Investigamos y probamos de verdad cómo mover un motor DC en dos sentidos con el L293D.</p></div>
+      <div class="card" style="border-left-color:var(--purple); justify-content:center;"><h3 style="color:#7b3fdb">Semana 4 — Sensor, LEDs y el carrito</h3><p>Programamos un sensor ultrasónico con cuatro LEDs, y en la última clase armamos el carrito con dos motores.</p></div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3: Objetivo -->
+  <section class="slide" style="--accent:#2f8fff; --accent-deep:#1c5fd6;">
+    <div class="eyebrow"><span class="chip"></span> LO QUE QUEREMOS LOGRAR</div>
+    <h1 class="title">Ir entendiendo un sistema embebido paso a paso</h1>
+    <div class="content">
+      <div class="col">
+        <div class="card">
+          <h3>Nuestra meta</h3>
+          <p class="lede">Vamos avanzando por partes: primero investigar, después simular, y solo al final armar algo físico. Todavía nos faltan varias semanas de proyecto, así que esto es un corte de avance, no el resultado final.</p>
+        </div>
+        <div class="card" style="border-left-color:var(--green);">
+          <h3 style="color:#0a9c6f">Cómo hemos trabajado</h3>
+          <ul>
+            <li>Investigamos proyectos parecidos ya hechos por otros.</li>
+            <li>Simulamos en Tinkercad y en Fritzing antes de conectar nada.</li>
+            <li>Armamos en protoboard solo lo que ya teníamos claro.</li>
+          </ul>
+        </div>
+      </div>
+      <div class="col">
+        <div class="card" style="flex:1; border-left-color:var(--purple); justify-content:flex-start;">
+          <h3 style="color:#7b3fdb">Con qué hemos trabajado</h3>
+          <div class="pill-row">
+            <span class="pill" style="border-color:var(--blue); color:var(--blue-deep);">Arduino UNO / Duemilanove</span>
+            <span class="pill" style="border-color:var(--orange); color:#c65a1f;">Puente H (L293D)</span>
+            <span class="pill" style="border-color:var(--green); color:#0a9c6f;">Sensor HC-SR04</span>
+            <span class="pill" style="border-color:var(--pink); color:#c23568;">LEDs y resistencias</span>
+            <span class="pill" style="border-color:var(--purple); color:#7b3fdb;">Motores DC</span>
+            <span class="pill" style="border-color:var(--yellow); color:#a17a00;">Protoboard</span>
+            <span class="pill" style="border-color:var(--blue); color:var(--blue-deep);">EasyEDA (en teoría)</span>
+          </div>
+          <img class="evidence" style="margin-top:1rem;" src="assets/leds_resistores.png" alt="LEDs y resistencias usadas">
+          <div class="figcap">Algunos de los componentes reales que hemos usado</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 4: Semana 1 - Investigación RFID -->
+  <section class="slide" style="--accent:#2f8fff; --accent-deep:#1c5fd6;">
+    <div class="eyebrow"><span class="chip"></span> SEMANA 1</div>
+    <h1 class="title">El profesor nos pidió buscar un proyecto</h1>
+    <p class="subtitle">La primera semana fue de investigación pura: todavía no tocamos ningún componente.</p>
+    <div class="content">
+      <div class="col card">
+        <h3>Lo que investigamos</h3>
+        <ul>
+          <li>Buscamos un proyecto para trabajar en el semestre, y elegimos uno de identificación de carnet con RFID y ESP32.</li>
+          <li>Revisamos un proyecto público y un artículo que muestran cómo se lee una tarjeta y cómo se organiza esa información.</li>
+          <li>Vimos que JLCPCB es una opción económica para mandar a fabricar una placa, más adelante en el semestre.</li>
+        </ul>
+      </div>
+      <div class="col card" style="border-left-color:var(--yellow);">
+        <h3 style="color:#a17a00">Y nos dijeron: van a aprender EasyEDA</h3>
+        <p class="lede">El profesor nos avisó que la siguiente parte sería aprender a usar EasyEDA para diseñar circuitos. Por eso investigamos y documentamos cómo funciona esa herramienta, apoyándonos en un video tutorial.</p>
+        <div class="note">⚠ Todavía no hemos fabricado ni armado esta placa</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 5: EasyEDA como herramienta -->
+  <section class="slide" style="--accent:#2f8fff; --accent-deep:#1c5fd6;">
+    <div class="eyebrow"><span class="chip"></span> SEMANA 1 · APRENDIENDO LA HERRAMIENTA</div>
+    <h1 class="title">Qué aprendimos sobre cómo se diseña una placa</h1>
+    <p class="subtitle">Esto es lo que investigamos que se debe hacer en EasyEDA — es la teoría que vamos a aplicar más adelante.</p>
+    <div class="content">
+      <div class="col card">
+        <h3>1. El esquemático primero</h3>
+        <p>Se colocan los componentes y se conectan con líneas que representan los cables. Ahí se define toda la lógica eléctrica antes de pensar en la placa física.</p>
+      </div>
+      <div class="col card" style="border-left-color:var(--purple);">
+        <h3 style="color:#7b3fdb">2. Después, las pistas y el acomodo</h3>
+        <p>Ya con el esquemático revisado, se convierten las conexiones en pistas de cobre, cuidando el ancho y la separación entre ellas, y se acomodan los componentes agrupados por función.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 6: Vista 3D como meta -->
+  <section class="slide" style="--accent:#2f8fff; --accent-deep:#1c5fd6;">
+    <div class="eyebrow"><span class="chip"></span> SEMANA 1 · APRENDIENDO LA HERRAMIENTA</div>
+    <h1 class="title">La meta: revisarla en 3D antes de fabricar</h1>
+    <div class="content">
+      <div class="col card">
+        <h3>Por qué es importante</h3>
+        <p class="lede">EasyEDA permite ver la placa en 3D y rotarla, para revisar que ningún componente se salga de los bordes o choque con otro, antes de mandarla a fabricar de verdad.</p>
+      </div>
+      <div class="col card" style="border-left-color:var(--pink);">
+        <h3 style="color:#c23568">Dónde estamos parados</h3>
+        <p class="lede">Con esto entendimos la teoría antes de empezar a practicar de verdad. La placa de identificación con RFID la vamos a diseñar y, si el tiempo alcanza, a fabricar más adelante en el semestre.</p>
+        <div class="note">⚠ Próximo paso: empezar a practicar en EasyEDA de verdad</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 7: Semana 1 - Primer contacto práctico con EasyEDA -->
+  <section class="slide" style="--accent:#2f8fff; --accent-deep:#1c5fd6;">
+    <div class="eyebrow"><span class="chip"></span> SEMANA 1 · YA EMPEZAMOS A PRACTICAR</div>
+    <h1 class="title">Nuestro primer contacto práctico con EasyEDA</h1>
+    <p class="subtitle">Antes de diseñar la placa real del RFID, hicimos dos ejercicios: revisar por dentro un proyecto RFID+ESP32 ya hecho, y recrear nosotros mismos un esquemático y una placa completa.</p>
+    <div class="content" style="flex-direction:column; gap:0.9rem;">
+      <div style="display:flex; gap:1rem; flex:1; min-height:0;">
+        <div style="flex:1; text-align:center;">
+          <img class="evidence" style="max-height:26vh;" src="assets/easyeda_rfid_pcb_ref.png" alt="Revisando el PCB del proyecto RFID+ESP32 de referencia">
+          <div class="figcap">Revisando las pistas del proyecto RFID+ESP32 de referencia</div>
+        </div>
+        <div style="flex:1; text-align:center;">
+          <img class="evidence" style="max-height:26vh;" src="assets/easyeda_recreando_l293d.png" alt="Recreando el esquemático del L293D en EasyEDA">
+          <div class="figcap">Recreando nosotros mismos el esquemático del L293D</div>
+        </div>
+        <div style="flex:1; text-align:center;">
+          <img class="evidence" style="max-height:26vh;" src="assets/easyeda_pcb3d_ne555.png" alt="Nuestra placa 3D del zumbador NE555">
+          <div class="figcap">Nuestra propia placa en 3D: el zumbador NE555 del tutorial</div>
+        </div>
+      </div>
+      <div class="card" style="border-left-color:var(--blue);">
+        <h3>Por qué hicimos esto</h3>
+        <p class="lede">Con el proyecto de referencia aprendimos a leer un diseño ya hecho, y al recrear el esquemático del L293D y armar la placa del zumbador practicamos con nuestras propias manos antes de diseñar la placa real del RFID.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 8: Semana 2 - Primer acercamiento a Arduino -->
+  <section class="slide" style="--accent:#ff7a3d; --accent-deep:#c65a1f;">
+    <div class="eyebrow"><span class="chip"></span> SEMANA 2 · PRIMEROS PASOS</div>
+    <h1 class="title">Nuestro primer contacto real con el Arduino</h1>
+    <p class="subtitle">Hasta la semana 1 todo fue investigación en papel. En la semana 2 conectamos y programamos una tarjeta por primera vez.</p>
+    <div class="content">
+      <div class="col card">
+        <h3>Qué hicimos</h3>
+        <ul>
+          <li>Conectamos por primera vez una tarjeta Arduino (Duemilanove) por USB a la laptop.</li>
+          <li>Reconocimos sus partes: pines digitales, pines analógicos, alimentación y los LED indicadores de la placa.</li>
+          <li>Instalamos y abrimos el Arduino IDE, y aprendimos a seleccionar la placa y el puerto correcto (COM4) para poder cargarle código.</li>
+        </ul>
+        <div class="note">⚠ Este fue literalmente nuestro primer "Hola mundo" con hardware</div>
+      </div>
+      <div class="col">
+        <img class="evidence" style="max-height:24vh;" src="assets/arduino_board_usb.png" alt="Tarjeta Arduino Duemilanove conectada por USB">
+        <div class="figcap">Nuestra primera tarjeta Arduino conectada por USB</div>
+        <img class="evidence" style="max-height:20vh; margin-top:0.7rem;" src="assets/arduino_ide.png" alt="Arduino IDE reconociendo la tarjeta">
+        <div class="figcap">El Arduino IDE reconociendo la tarjeta en el puerto COM4</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 8: Semana 2 - Investigación asignada (Informe 2) -->
+  <section class="slide" style="--accent:#9b5cff; --accent-deep:#7b3fdb;">
+    <div class="eyebrow"><span class="chip"></span> SEMANA 2 · INFORME 2</div>
+    <h1 class="title">Esa misma semana también nos asignaron investigar</h1>
+    <p class="subtitle">El profesor nos pidió analizar dispositivos comerciales de sistemas embebidos y reconocer sus piezas por dentro. Ese trabajo quedó documentado como el Informe 2.</p>
+    <div class="content" style="flex-direction:column; gap:0.9rem;">
+      <div style="display:flex; gap:1.5rem; flex:1; min-height:0;">
+        <div class="col card">
+          <h3>Los que se conectan por WiFi</h3>
+          <ul>
+            <li>Un interruptor inteligente (Sonoff), controlado desde una app.</li>
+            <li>Una cámara IP que graba y se configura por WiFi.</li>
+            <li>Un interruptor con sensor de movimiento (Kasa).</li>
+          </ul>
+        </div>
+        <div class="col card">
+          <h3>Los que no usan WiFi doméstico</h3>
+          <ul>
+            <li>Un rastreador GPS que usa datos móviles con SIM.</li>
+            <li>Un módulo de relé sin conexión, que se ajusta a mano con potenciómetros.</li>
+          </ul>
+          <p style="margin-top:0.6rem;">Comparar estos dos nos ayudó a entender la diferencia entre un sistema "conectado" y uno completamente autónomo.</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:1rem;">
+        <div style="flex:1; text-align:center;">
+          <img class="evidence" style="max-height:16vh;" src="assets/dev_sonoff.png" alt="Interruptor Sonoff analizado">
+          <div class="figcap">Sonoff Wi-Fi Smart Switch</div>
+        </div>
+        <div style="flex:1; text-align:center;">
+          <img class="evidence" style="max-height:16vh;" src="assets/dev_camara_v720.png" alt="Manual de la cámara T3 V720">
+          <div class="figcap">Cámara IP T3 (V720)</div>
+        </div>
+        <div style="flex:1; text-align:center;">
+          <img class="evidence" style="max-height:16vh;" src="assets/dev_kasa.png" alt="Caja del interruptor Kasa KS200M">
+          <div class="figcap">TP-Link Kasa KS200M</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 9: Semana 3 - Investigación puente H -->
+  <section class="slide" style="--accent:#12c48b; --accent-deep:#0a9c6f;">
+    <div class="eyebrow"><span class="chip"></span> SEMANA 3</div>
+    <h1 class="title">Ahora sí armamos algo: Arduino y un motor DC</h1>
+    <p class="subtitle">En la tercera semana investigamos y probamos de verdad cómo controlar un motor.</p>
+    <div class="content">
+      <div class="col card">
+        <h3>Lo que investigamos</h3>
+        <p class="lede">Un puente H es como cuatro interruptores en forma de "H" que invierten la corriente hacia un motor, para que gire en un sentido o en el otro sin tocar ningún cable.</p>
+        <p style="margin-top:0.6rem;">El L293D trae dos puentes H adentro, así que con un solo chip se pueden controlar hasta dos motores por separado.</p>
+      </div>
+      <div class="col card">
+        <h3>La lógica que usamos</h3>
+        <table class="truth">
+          <tr><th>IN1</th><th>IN2</th><th>Qué hace el motor</th></tr>
+          <tr><td>HIGH</td><td>LOW</td><td>Gira hacia adelante</td></tr>
+          <tr><td>LOW</td><td>HIGH</td><td>Gira en reversa</td></tr>
+          <tr><td>LOW</td><td>LOW</td><td>Se detiene, gira libre</td></tr>
+          <tr><td>HIGH</td><td>HIGH</td><td>Se detiene con freno</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 10: Semana 3 - Conexión + código -->
+  <section class="slide" style="--accent:#12c48b; --accent-deep:#0a9c6f;">
+    <div class="eyebrow"><span class="chip"></span> SEMANA 3</div>
+    <h1 class="title">Cómo lo conectamos y el código que usamos</h1>
+    <div class="content">
+      <div class="col card">
+        <h3>Las conexiones</h3>
+        <table class="truth">
+          <tr><th>Pin del L293D</th><th>Va conectado a</th></tr>
+          <tr><td>Alimentación lógica</td><td>5V del Arduino</td></tr>
+          <tr><td>Alimentación del motor</td><td>5V o fuente aparte</td></tr>
+          <tr><td>Tierra (GND)</td><td>GND del Arduino</td></tr>
+          <tr><td>IN1 / IN2</td><td>Pines digitales 8 y 9</td></tr>
+        </table>
+      </div>
+      <div class="col">
+        <div class="code">digitalWrite(in1, <span class="kw">HIGH</span>);
+digitalWrite(in2, <span class="kw">LOW</span>);
+delay(2000);   <span class="cm">// gira 2 seg</span>
+
+digitalWrite(in1, <span class="kw">LOW</span>);
+digitalWrite(in2, <span class="kw">HIGH</span>);
+delay(2000);   <span class="cm">// gira al revés</span></div>
+        <div class="figcap">Solo alternamos IN1 e IN2 para cambiar el sentido de giro</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 11: Semana 3 - Evidencia -->
+  <section class="slide" style="--accent:#12c48b; --accent-deep:#0a9c6f;">
+    <div class="eyebrow"><span class="chip"></span> SEMANA 3 · EVIDENCIA</div>
+    <h1 class="title">Lo probamos en tres formas y funcionó</h1>
+    <div class="content">
+      <div class="col">
+        <img class="evidence" style="max-height:38vh;" src="assets/proto_test_motor.png" alt="Prueba física del motor con el L293D">
+        <div class="figcap">Sosteniendo el motor DC mientras probábamos el giro con el L293D</div>
+      </div>
+      <div class="col">
+        <img class="evidence" style="max-height:20vh;" src="assets/fritzing_l293d.png" alt="Simulación en Fritzing">
+        <div class="figcap">Simulación en Fritzing</div>
+        <img class="evidence" style="max-height:20vh; margin-top:0.7rem;" src="assets/tinkercad_l293d.png" alt="Simulación en Tinkercad">
+        <div class="figcap">Simulación en Tinkercad</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 12: Semana 4 - Sensor ultrasónico + LEDs -->
+  <section class="slide" style="--accent:#ff5d8f; --accent-deep:#c23568;">
+    <div class="eyebrow"><span class="chip"></span> SEMANA 4</div>
+    <h1 class="title">Le dimos "ojos" al proyecto: el sensor de distancia</h1>
+    <p class="subtitle">Con unos sensores HC-SR04 que nos dio el profesor, hicimos que la luz de los LEDs cambiara según qué tan cerca se acercara un objeto.</p>
+    <div class="content">
+      <div class="col">
+        <div class="code"><span class="kw">const</span> <span class="kw">int</span> TRIG = 3, ECHO = 4;
+<span class="kw">const</span> <span class="kw">int</span> LED_1 = 7;  <span class="cm">// se enciende MÁS LEJOS</span>
+<span class="kw">const</span> <span class="kw">int</span> LED_4 = 5;  <span class="cm">// se enciende MÁS CERCA</span>
+
+<span class="cm">// duracion = tiempo del eco</span>
+distancia = duracion * 0.034 / 2;
+
+<span class="kw">if</span> (distancia &gt; 30)      digitalWrite(LED_1, <span class="kw">HIGH</span>);
+<span class="kw">else if</span> (distancia &gt; 20) digitalWrite(LED_2, <span class="kw">HIGH</span>);
+<span class="kw">else if</span> (distancia &gt; 10) digitalWrite(LED_3, <span class="kw">HIGH</span>);
+<span class="kw">else</span>                    digitalWrite(LED_4, <span class="kw">HIGH</span>);</div>
+        <div class="led-strip">
+          <div class="led on1">1</div>
+          <div class="led on2">2</div>
+          <div class="led on3">3</div>
+          <div class="led on4">4</div>
+        </div>
+        <div class="figcap">LED 1 significa "muy lejos" y LED 4 significa "muy cerca"</div>
+      </div>
+      <div class="col">
+        <img class="evidence" src="assets/hcsr04_pair.png" alt="Módulos HC-SR04 usados">
+        <div class="card" style="margin-top:0.8rem;">
+          <h3>Cómo funciona</h3>
+          <p class="lede">El sensor manda un sonido que no escuchamos, y mide cuánto tarda en rebotar y volver. Con ese tiempo calculamos la distancia en centímetros — la misma idea que después usaría el carrito para "sentir" los obstáculos.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 13: Última clase - Carrito -->
+  <section class="slide" style="--accent:#9b5cff; --accent-deep:#7b3fdb;">
+    <div class="eyebrow"><span class="chip"></span> ÚLTIMA CLASE (MIÉRCOLES)</div>
+    <h1 class="title">El carrito: dos motores, un mismo puente H</h1>
+    <p class="subtitle">Con lo aprendido en la semana 3 sobre el L293D, esta última clase armamos el carrito completo con dos motores.</p>
+    <div class="content">
+      <div class="col">
+        <div class="code">avanzar():     IN1=1 IN2=0  IN3=1 IN4=0
+retroceder():  IN1=0 IN2=1  IN3=0 IN4=1
+girarDerecha(): solo motor 1 activo
+girarIzquierda(): solo motor 2 activo
+
+<span class="cm">// secuencia de prueba</span>
+avanzar();       delay(3000);
+girarDerecha();  delay(1000);
+detener();       delay(1000);</div>
+        <div class="figcap">Cada motor usa su propio par de pines, con la misma lógica de la Semana 3</div>
+      </div>
+      <div class="col">
+        <img class="evidence" src="assets/carrito.png" alt="Carrito robótico con Arduino y ruedas">
+        <div class="card" style="margin-top:0.8rem;">
+          <h3>La misma idea, ahora por partida doble</h3>
+          <p class="lede">Tomamos lo que aprendimos con un motor en la Semana 3, y lo aplicamos a dos al mismo tiempo. Así el carrito puede avanzar, retroceder y girar hacia cualquier lado.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 14: Estado actual honesto -->
+  <section class="slide" style="--accent:#ffc73c; --accent-deep:#a17a00;">
+    <div class="eyebrow"><span class="chip"></span> EN QUÉ VAMOS REALMENTE</div>
+    <h1 class="title">Lo que ya funciona y lo que todavía falta</h1>
+    <div class="content">
+      <div class="col card">
+        <h3 style="color:#0a9c6f">✔ Ya lo probamos y funciona</h3>
+        <ul>
+          <li>Primer contacto con Arduino y su IDE, listo y funcionando.</li>
+          <li>Motor DC controlado en ambos sentidos con el L293D.</li>
+          <li>Sensor de distancia con los cuatro LEDs.</li>
+          <li>El carrito avanzando, retrocediendo y girando.</li>
+        </ul>
+      </div>
+      <div class="col card" style="border-left-color:var(--orange);">
+        <h3 style="color:#c65a1f">⏳ Todavía nos falta</h3>
+        <ul>
+          <li>Diseñar el esquemático real de la placa RFID en EasyEDA.</li>
+          <li>Fabricar o al menos simular por completo esa placa.</li>
+          <li>Unir el sensor de distancia con el control del carrito en un solo programa.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SLIDE 15: Conclusiones -->
+  <section class="slide" style="--accent:#ff5d8f; --accent-deep:#c23568;">
+    <div class="eyebrow"><span class="chip"></span> PARA CERRAR</div>
+    <h1 class="title">Qué nos llevamos de estas cuatro semanas</h1>
+    <div class="content">
+      <div class="col card">
+        <h3>Lo que aprendimos</h3>
+        <ul>
+          <li>Cómo se investiga y se elige un proyecto antes de tocar cualquier componente.</li>
+          <li>A conectar y programar un Arduino desde cero, con su IDE.</li>
+          <li>Cómo se piensa el diseño de un circuito, aunque todavía no lo fabriquemos.</li>
+          <li>A controlar un motor en los dos sentidos con un puente H.</li>
+          <li>A leer un sensor de distancia y mostrarlo con LEDs.</li>
+          <li>Que siempre conviene simular antes de armar el circuito de verdad.</li>
+        </ul>
+      </div>
+      <div class="col card" style="border-left-color:var(--blue);">
+        <h3 style="color:var(--blue-deep)">Lo que sigue</h3>
+        <div class="timeline">
+          <div class="tl-item"><div class="tl-dot" style="background:var(--blue)"></div><p>Diseñar y, si alcanza el tiempo, fabricar la placa RFID.</p></div>
+          <div class="tl-item"><div class="tl-dot" style="background:var(--blue)"></div><p>Probar el carrito en vivo frente al grupo.</p></div>
+          <div class="tl-item"><div class="tl-dot" style="background:var(--blue)"></div><p>Que todos podamos responder preguntas del profesor.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="img-modal" id="imgModal">
+  <div class="modal-hint">Clic en cualquier parte para cerrar</div>
+  <img id="imgModalImg" src="" alt="Imagen ampliada">
+</div>
+
+<div class="hud">
+  <button class="navbtn" onclick="go(-1)">← Anterior</button>
+  <div class="dots" id="dots"></div>
+  <span class="counter" id="counter">1 / 15</span>
+  <button class="navbtn" onclick="go(1)">Siguiente →</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const dotsWrap = document.getElementById('dots');
+  let current = 0;
+  slides.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i===0 ? ' active' : '');
+    d.onclick = () => { current = i; render(); };
+    dotsWrap.appendChild(d);
+  });
+  function render(){
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    document.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === current));
+    document.getElementById('counter').textContent = (current+1) + ' / ' + slides.length;
+  }
+  function go(delta){
+    current = Math.min(slides.length - 1, Math.max(0, current + delta));
+    render();
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') go(1);
+    if (e.key === 'ArrowLeft') go(-1);
+    if (e.key === 'Escape') closeModal();
+  });
+  render();
+
+  // Click-to-zoom lightbox for all evidence images
+  const modal = document.getElementById('imgModal');
+  const modalImg = document.getElementById('imgModalImg');
+  function openModal(src, e){
+    if (e) e.stopPropagation();
+    modalImg.src = src;
+    modal.classList.add('active');
+  }
+  function closeModal(){ modal.classList.remove('active'); }
+  document.querySelectorAll('img.evidence').forEach(img => {
+    img.addEventListener('click', (e) => openModal(img.getAttribute('src'), e));
+  });
+  modal.addEventListener('click', closeModal);
+</script>
+
+</body>
+</html>
